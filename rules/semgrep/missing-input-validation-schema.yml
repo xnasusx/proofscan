@@ -1,0 +1,52 @@
+# Approximation. The built-in AST engine is authoritative for this rule.
+#
+# Semgrep cannot resolve validation middleware imported from another module, and
+# expressing "no schema call anywhere in this handler" requires enumerating every
+# validation library's call shape. This rule is scoped to credential routes,
+# where the finding carries real weight, rather than every mutating route — the
+# built-in engine covers the full POST/PUT/PATCH surface with graded severity.
+rules:
+  - id: proofscan.missing-input-validation-schema
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      `$PATH` accepts a request body but no validation-library schema (Zod, Joi, Yup, Ajv,
+      express-validator, celebrate or similar) is referenced by the route middleware or the handler.
+      This is a credential route, so the unvalidated fields are the identifier and the secret
+      themselves: no format check on the identifier, no length bound on the password. Declare a schema
+      that sets type, format and length bounds and rejects unexpected fields, applied in one place that
+      is enforced consistently.
+    metadata:
+      proofscan_severity: medium
+      title: No request validation schema on a credential route
+      cwe:
+        - CWE-20
+      exploitability: >-
+        Reachable pre-authentication. Enables malformed and oversized credential input rather than a
+        direct compromise, which is why this is medium and not high.
+      confidence: LOW
+      approximation: true
+      category: security
+      references:
+        - https://cwe.mitre.org/data/definitions/20.html
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $APP.post($PATH, ($REQ, $RES) => { ... })
+          - pattern: |
+              $APP.post($PATH, async ($REQ, $RES) => { ... })
+          - pattern: |
+              $APP.post($PATH, function ($REQ, $RES) { ... })
+          - pattern: |
+              $APP.put($PATH, ($REQ, $RES) => { ... })
+          - pattern: |
+              $APP.put($PATH, async ($REQ, $RES) => { ... })
+          - pattern: |
+              $APP.patch($PATH, async ($REQ, $RES) => { ... })
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: (?i).*(login|signin|sign-in|log-in|register|signup|sign-up|password|reset|forgot|token|refresh|authenticate|otp|mfa|2fa).*
+      # No recognised schema call appears anywhere in the handler body.
+      - pattern-not-regex: \.(safeParse|parseAsync|safeParseAsync|validateAsync|validateSync)\s*\(
+      - pattern-not-regex: \b(z|Joi|joi|yup|v|ajv)\s*\.\s*(object|string|number|boolean|array|shape)\s*\(
+      - pattern-not-regex: \b(celebrate|checkSchema|validationResult|matchedData)\s*\(

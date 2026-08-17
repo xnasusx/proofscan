@@ -1,0 +1,42 @@
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Scan output: run history and the audit log are written into the *target*, but
+# ignore them here too in case proofscan is ever pointed at its own repo.
+.proofscan/
+
+# Real target definitions can name internal hosts and authorisation details.
+# Only the example file is committed.
+targets.yaml
+!targets.example.yaml
+
+# Acceptance fixture clone.
+test/acceptance/.fixture-cache/
+
+# Local scanner reports.
+*.sarif
+proofscan-report*.json
+
+# Secrets and credentials — never commit. proofscan reads ANTHROPIC_API_KEY from
+# the environment, not from a file, but guard against a key ever landing on disk.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+
+# Agent and editor tooling.
+.claude/
+.codex/
+.cursor/
+.vscode/
+.idea/
+launch.json
+
+# OS noise.
+.DS_Store
+Thumbs.db

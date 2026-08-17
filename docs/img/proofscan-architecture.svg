@@ -1,0 +1,88 @@
+<svg width="680" height="656" viewBox="0 0 680 656" role="img" xmlns="http://www.w3.org/2000/svg">
+  <title>proofscan architecture and data flow</title>
+  <desc>A target flows through Layer 1 static analysis, then a reasoner and plan inference feed a differential exploit engine that runs the real attack in a sandbox (Layer 2) or against a live instance (Layer 3). The verdict is decided by reading the victim's data back, splitting into verified-exploitable or unverified-flagged; verified findings go to Layer 4 remediation, which re-runs the exploit on the fix.</desc>
+  <style>
+    text { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; }
+    .th { fill: #e6e9ef; font-size: 14px; font-weight: 600; }
+    .ts { fill: #9aa4b2; font-size: 12px; }
+    .cap { fill: #7f8896; font-size: 12px; }
+    .nbox { fill: #252a34; stroke: #3d4553; stroke-width: 1; }
+    .teal { fill: #163038; stroke: #56b6c2; stroke-width: 1.5; }
+    .green { fill: #25311d; stroke: #98c379; stroke-width: 1.5; }
+    .arr { stroke: #8b93a1; stroke-width: 1.5; fill: none; }
+    .leader { stroke: #6b7280; stroke-width: 1.2; stroke-dasharray: 4 4; fill: none; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="#8b93a1" stroke-width="1.5"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="680" height="656" rx="12" fill="#1e222a"/>
+
+  <!-- Target -->
+  <rect class="nbox" x="240" y="16" width="200" height="48" rx="8"/>
+  <text class="th" x="340" y="34" text-anchor="middle" dominant-baseline="central">Target</text>
+  <text class="ts" x="340" y="52" text-anchor="middle" dominant-baseline="central">source repo or running app</text>
+  <path class="arr" d="M340 64 L340 96" marker-end="url(#arrow)"/>
+
+  <!-- Layer 1 static -->
+  <rect class="nbox" x="210" y="98" width="260" height="54" rx="8"/>
+  <text class="th" x="340" y="118" text-anchor="middle" dominant-baseline="central">Layer 1 · Static analysis</text>
+  <text class="ts" x="340" y="136" text-anchor="middle" dominant-baseline="central">AST + Semgrep · Gitleaks · Trivy</text>
+  <text class="ts" x="340" y="173" text-anchor="middle">route inventory</text>
+  <path class="arr" d="M340 152 L200 190" marker-end="url(#arrow)"/>
+  <path class="arr" d="M340 152 L480 190" marker-end="url(#arrow)"/>
+
+  <!-- Reasoner -->
+  <rect class="nbox" x="70" y="190" width="210" height="54" rx="8"/>
+  <text class="th" x="175" y="210" text-anchor="middle" dominant-baseline="central">Reasoner</text>
+  <text class="ts" x="175" y="228" text-anchor="middle" dominant-baseline="central">heuristic / claude-opus-5</text>
+
+  <!-- Plan inference -->
+  <rect class="nbox" x="400" y="190" width="210" height="54" rx="8"/>
+  <text class="th" x="505" y="210" text-anchor="middle" dominant-baseline="central">Plan inference</text>
+  <text class="ts" x="505" y="228" text-anchor="middle" dominant-baseline="central">auth · resources · fields</text>
+
+  <path class="arr" d="M180 244 L295 286" marker-end="url(#arrow)"/>
+  <path class="arr" d="M500 244 L385 286" marker-end="url(#arrow)"/>
+
+  <!-- Engine (proof, teal) -->
+  <rect class="teal" x="180" y="286" width="320" height="58" rx="8"/>
+  <text class="th" x="340" y="308" text-anchor="middle" dominant-baseline="central">Differential exploit engine</text>
+  <text class="ts" x="340" y="326" text-anchor="middle" dominant-baseline="central">sandbox (L2) · live target (L3)</text>
+  <path class="arr" d="M340 344 L340 380" marker-end="url(#arrow)"/>
+
+  <!-- Verdict (proof, teal) -->
+  <rect class="teal" x="190" y="380" width="300" height="52" rx="8"/>
+  <text class="th" x="340" y="400" text-anchor="middle" dominant-baseline="central">Verdict — did the victim's data change?</text>
+  <text class="ts" x="340" y="417" text-anchor="middle" dominant-baseline="central">read back as the victim, not the 404</text>
+  <text class="ts" x="236" y="452" text-anchor="middle">changed</text>
+  <text class="ts" x="446" y="452" text-anchor="middle">unchanged</text>
+  <path class="arr" d="M300 432 L180 470" marker-end="url(#arrow)"/>
+  <path class="arr" d="M380 432 L500 470" marker-end="url(#arrow)"/>
+
+  <!-- verified (green) -->
+  <rect class="green" x="70" y="470" width="210" height="48" rx="8"/>
+  <text class="th" x="175" y="488" text-anchor="middle" dominant-baseline="central">verified-exploitable</text>
+  <text class="ts" x="175" y="504" text-anchor="middle" dominant-baseline="central">an exploit actually ran</text>
+
+  <!-- unverified-flagged (neutral) -->
+  <rect class="nbox" x="400" y="470" width="210" height="48" rx="8"/>
+  <text class="th" x="505" y="488" text-anchor="middle" dominant-baseline="central">unverified-flagged</text>
+  <text class="ts" x="505" y="504" text-anchor="middle" dominant-baseline="central">a signal, not proof</text>
+
+  <path class="arr" d="M175 518 L300 556" marker-end="url(#arrow)"/>
+
+  <!-- Remediation -->
+  <rect class="nbox" x="210" y="556" width="260" height="54" rx="8"/>
+  <text class="th" x="340" y="576" text-anchor="middle" dominant-baseline="central">Layer 4 · Remediation</text>
+  <text class="ts" x="340" y="594" text-anchor="middle" dominant-baseline="central">ticket + PR · reverify gate</text>
+
+  <!-- loop back: re-run the exploit on the fix -->
+  <path class="leader" d="M470 583 L650 583 L650 315 L502 315" marker-end="url(#arrow)"/>
+  <text class="ts" x="574" y="305" text-anchor="middle">re-run on the fix</text>
+
+  <!-- legend -->
+  <text class="cap" x="340" y="636" text-anchor="middle">Teal — where the exploit runs and the verdict is decided.   Green — a finding proven by an executed exploit.</text>
+</svg>

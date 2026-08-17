@@ -1,0 +1,47 @@
+# Approximation. The built-in AST engine is authoritative for this rule.
+#
+# Semgrep matches one file at a time and cannot see that `app.use(limiter)` ran
+# earlier in the composed application, nor resolve middleware imported from
+# another module. It therefore over-reports where a limiter is applied globally
+# elsewhere. The built-in engine models mount order and global middleware; see
+# rules/semgrep/README.md.
+rules:
+  - id: proofscan.missing-rate-limit-auth-route
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      `$METHOD $PATH` accepts credentials but no rate-limiting or brute-force middleware is applied to
+      the route. An attacker with a credential list can test it at whatever rate the server sustains.
+      Apply a limiter keyed on both source IP and submitted account identifier — keying on IP alone
+      leaves distributed credential stuffing unthrottled, and keying on the account alone lets one IP
+      enumerate many accounts. If a limiter is applied globally via `app.use`, this rule cannot see it;
+      confirm against the composed application.
+    metadata:
+      proofscan_severity: medium
+      title: No rate limiting on a credential route
+      cwe:
+        - CWE-307
+        - CWE-799
+      exploitability: >-
+        Pre-authentication by definition. Success still depends on a weak or reused credential, which is
+        why this is rated medium rather than high.
+      confidence: LOW
+      approximation: true
+      category: security
+      references:
+        - https://cwe.mitre.org/data/definitions/307.html
+    patterns:
+      - pattern-either:
+          - pattern: $APP.post($PATH, ...)
+          - pattern: $APP.put($PATH, ...)
+          - pattern: $APP.patch($PATH, ...)
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: (?i).*(login|signin|sign-in|log-in|register|signup|sign-up|password|reset|forgot|token|refresh|authenticate|otp|mfa|2fa|magic-link).*
+      # No argument in the chain is named like a limiter.
+      - pattern-not:
+          patterns:
+            - pattern: $APP.$METHOD($PATH, ..., $MW, ...)
+            - metavariable-regex:
+                metavariable: $MW
+                regex: (?i).*(rate|limit|throttl|slow|brute).*

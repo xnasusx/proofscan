@@ -1,0 +1,79 @@
+# proofscan target registry
+#
+# Copy to targets.yaml (which is gitignored) and edit. A real targets file can
+# name internal hosts and carry authorisation details, so it is deliberately not
+# committed.
+#
+# The authorisation fields are not paperwork. The dynamic layers of this tool
+# create test accounts against a running application and attempt cross-user
+# access — the same activity as an authorised penetration test. proofscan refuses
+# to run those layers against any target that does not carry a complete
+# authorisation record here, and refuses again unless --authorized is passed on
+# the invocation itself. Static analysis of source on your own disk is not gated.
+
+targets:
+  # Static-only target. No authorisation record needed, and none of the dynamic
+  # layers will run against it.
+  - name: flaudecode
+    source_type: local_path
+    source_uri: ./fixtures/FlaudeCode
+
+  # A target you own and intend to test live. Every authorisation field is
+  # required before any dynamic layer will run.
+  - name: my-app-staging
+    source_type: local_path
+    source_uri: ../my-app
+    # Hostnames here use the RFC 2606 reserved .example domain. Substitute your
+    # own; do not commit a real internal hostname to a public repository.
+    runtime_base_url: https://staging.my-app.example
+    authorized_by: rootcaws.ops
+    authorized_at: "2026-08-09"
+    authorization_basis: >-
+      Application I own and operate; staging environment, no production data.
+    # Layer 3 (dynamic-fuzzer) config. Omit `resources` to rely on the target's
+    # OpenAPI document, if it serves one.
+    dynamic:
+      rate_limit_rps: 5                 # optional; caps request rate
+      auth:                             # optional; values shown are the defaults
+        register_path: /api/register
+        login_path: /api/login
+        username_field: email
+        password_field: password
+        token_field: token
+      resources:
+        - name: tasks
+          collection: /api/tasks        # POST here to create; response carries {id}
+          item: /api/tasks/:id          # id-parameterised operations to test
+          methods: [GET, PUT, DELETE]
+          child: /api/tasks/:id/notes   # optional; catches cascade side-effects
+
+  # A running instance with no source on disk — Layer 3 only. `source_type:
+  # runtime_url` skips the static and reasoning layers (there is nothing to read)
+  # and requires runtime_base_url. Use pre-provisioned identities when the target
+  # has no open registration.
+  - name: staging-blackbox
+    source_type: runtime_url
+    runtime_base_url: https://staging.my-app.example
+    authorized_by: rootcaws.ops
+    authorized_at: "2026-08-09"
+    authorization_basis: Application I own and operate; staging, black-box test.
+    dynamic:
+      auth:
+        login_path: /api/login
+        identities:
+          - { username: tester-a@example.com, password: "set-in-your-env" }
+          - { username: tester-b@example.com, password: "set-in-your-env" }
+      resources:
+        - { name: tasks, collection: /api/tasks, item: /api/tasks/:id, methods: [GET, PUT, DELETE] }
+
+  # A third-party target under written engagement. Record the actual basis —
+  # "assumed fine" is not an authorisation.
+  - name: client-engagement
+    source_type: local_path
+    source_uri: ../client-app
+    runtime_base_url: https://test.client.example
+    authorized_by: jane.doe@client.example
+    authorized_at: "2026-07-15"
+    authorization_basis: >-
+      Signed penetration-test authorisation, engagement CL-2026-14, scope limited
+      to test.client.example, window 2026-07-15 to 2026-08-15.

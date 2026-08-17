@@ -1,0 +1,45 @@
+{
+  "name": "proofscan",
+  "version": "0.4.0",
+  "description": "Layered, target-agnostic application flaw scanner: static analysis, AI-reasoning + sandboxed exploit verification, a dynamic BOLA/IDOR fuzzer, and a remediation loop that re-verifies fixes. A finding is verified only when an executed exploit changed another user's data.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "proofscan": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "files": [
+    "dist",
+    "rules",
+    "docs",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "node --experimental-strip-types src/cli.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "acceptance": "npm run build && node --experimental-strip-types test/acceptance/run-fixture.ts",
+    "acceptance:phase2": "npm run build && node --experimental-strip-types test/acceptance/run-phase2.ts",
+    "acceptance:phase3": "npm run build && node --experimental-strip-types test/acceptance/run-phase3.ts",
+    "acceptance:agnostic": "npm run build && node --experimental-strip-types test/acceptance/run-agnostic.ts",
+    "acceptance:phase4": "npm run build && node --experimental-strip-types test/acceptance/run-phase4.ts"
+  },
+  "dependencies": {
+    "picocolors": "^1.1.1",
+    "typescript": "^5.7.2",
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "vitest": "^4.1.10"
+  },
+  "optionalDependencies": {
+    "@anthropic-ai/sdk": "^0.116.0"
+  }
+}
